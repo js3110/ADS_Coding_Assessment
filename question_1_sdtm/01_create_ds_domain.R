@@ -9,11 +9,16 @@
 #         DSDECOD, DSCAT, VISITNUM, VISIT, DSDTC, DSSTDTC, DSSTDY
 # ==============================================================================
 
+# Start logging all console output to prove error-free execution
+log_file <- "question_1_sdtm/log.txt"
+con <- file(log_file, open = "wt")
+sink(con, type = "output")
+sink(con, type = "message", append = TRUE)
+
 # Load required libraries
 library(sdtm.oak)
 library(admiral)
 library(pharmaverseraw)
-library(ggplot2)
 library(pharmaversesdtm)
 library(dplyr)
 
@@ -32,7 +37,7 @@ ds_raw <- ds_raw %>%
     raw_src = "ds_raw"
   )
 
-# Start mapping dm domain
+# Start mapping DS domain
 ds <-
   # Map DSTERM from IT.DSTERM for non-OTHER EVENT records
   assign_no_ct(
@@ -165,4 +170,18 @@ ds <- ds %>%
     STUDYID, DOMAIN, USUBJID, DSSEQ, DSTERM, DSDECOD,
     DSCAT, VISITNUM, VISIT, DSDTC, DSSTDTC, DSSTDY
   )
-# TODO: Save output dataset
+# Save output dataset
+write.csv(ds, "question_1_sdtm/ds_domain.csv", row.names = FALSE)
+
+# Log summary info
+cat("\n\n=== Execution Summary ===\n")
+cat("Date:", format(Sys.time()), "\n")
+cat("Dimensions:", nrow(ds), "rows x", ncol(ds), "columns\n\n")
+str(ds)
+cat("\n")
+sessionInfo()
+
+# Stop logging
+sink(type = "message")
+sink(type = "output")
+close(con)
