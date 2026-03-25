@@ -15,10 +15,12 @@ library(admiral)
 library(pharmaverseraw)
 library(ggplot2)
 library(pharmaversesdtm)
+library(dplyr)
 
 # Load raw data and controlled terminology
 ds_raw <- pharmaverseraw::ds_raw
 study_ct <- read.csv("question_1_sdtm/sdtm_ct.csv")
+
 # Read in DM domain
 dm <- pharmaversesdtm::dm
 
@@ -30,46 +32,137 @@ ds_raw <- ds_raw %>%
     raw_src = "ds_raw"
   )
 
+# Start mapping dm domain
 ds <-
-  # Derive topic variable
-  # Map DSTERM using assign_no_ct, raw_var=IT.DSTERM, tgt_var=DSTERM
+  # Map DSTERM from IT.DSTERM for non-OTHER EVENT records
   assign_no_ct(
     raw_dat = ds_raw,
     raw_var = "IT.DSTERM",
     tgt_var = "DSTERM",
     id_vars = oak_id_vars()
-  ) # Check this- pdf says if OTHERSP is NULL then we map this
+  ) %>%
+  # For records where IT.DSTERM is NA, use OTHERSP
+  assign_no_ct(
+    raw_dat = ds_raw %>% condition_add(!is.na(OTHERSP)),
+    raw_var = "OTHERSP",
+    tgt_var = "DSTERM",
+    id_vars = oak_id_vars()
+  ) %>%
+  # Map DSCAT based on OTHERSP and IT.DSDECOD values
+  # DSCAT = "PROTOCOL MILESTONE" when Randomized
+  hardcode_ct(
+    raw_dat = ds_raw %>% condition_add(IT.DSDECOD == "Randomized"),
+    raw_var = "IT.DSDECOD",
+    tgt_var = "DSCAT",
+    tgt_val = "PROTOCOL MILESTONE",
+    ct_spec = study_ct,
+    ct_clst = "C74558",
+    id_vars = oak_id_vars()
+  ) %>%
+  # DSCAT = "OTHER EVENT" when OTHERSP is populated
+  hardcode_ct(
+    raw_dat = ds_raw %>% condition_add(!is.na(OTHERSP)),
+    raw_var = "OTHERSP",
+    tgt_var = "DSCAT",
+    tgt_val = "OTHER EVENT",
+    ct_spec = study_ct,
+    ct_clst = "C74558",
+    id_vars = oak_id_vars()
+  ) %>%
+  # DSCAT = "DISPOSITION EVENT" for the rest
+  hardcode_ct(
+    raw_dat = ds_raw %>% condition_add(
+      is.na(OTHERSP) & (IT.DSDECOD != "Randomized" | is.na(IT.DSDECOD))
+    ),
+    raw_var = "IT.DSTERM",
+    tgt_var = "DSCAT",
+    tgt_val = "DISPOSITION EVENT",
+    ct_spec = study_ct,
+    ct_clst = "C74558",
+    id_vars = oak_id_vars()
+  ) %>%
+  # DSDECOD from IT.DSDECOD when OTHERSP is null
+  # NOTE: DSDECOD officially has CT however aCRF instructs to map as below
+  assign_no_ct(
+    raw_dat = ds_raw %>% condition_add(
+      is.na(OTHERSP)
+      ),
+    raw_var = "IT.DSDECOD",
+    tgt_var = "DSDECOD",
+    id_vars = oak_id_vars()
+  ) %>%
+  # DSDECOD from OTHERSP when OTHERSP is not null
+  assign_no_ct(
+    raw_dat = ds_raw %>% condition_add(!is.na(OTHERSP)),
+    raw_var = "OTHERSP",
+    tgt_var = "DSDECOD",
+    id_vars = oak_id_vars()
+  )
 
-# ds <- ds %>%
-#   # Map AEACN using assign_no_ct, raw_var=IT.AEACN, tgt_var=AEACN
-#   assign_no_ct(
-#     raw_dat = ds_raw,
-#     raw_var = "IT.AEACN",
-#     tgt_var = "AEACN",
-#     id_vars = oak_id_vars()
-#   ) %>%
-#   # # Map AESHOSP using assign_ct, raw_var=IT.AESHOSP, tgt_var=AESHOSP
-#   # assign_ct(
-#   #   raw_dat = ds_raw,
-#   #   raw_var = "",
-#   #   tgt_var = "DSCAT",
-#   #   ct_spec = study_ct,
-#   #   ct_clst = "C74558",
-#   #   id_vars = oak_id_vars()
-#   # ) %>%
-#   # Map AEDTC using assign_datetime, raw_var=AEDTCOL
-#   assign_datetime(
-#     raw_dat = ae_raw,
-#     raw_var = "AEDTCOL",
-#     tgt_var = "AEDTC",
-#     raw_fmt = c("m/d/y")
-#   )
-# 
-# # TODO: Derive additional variables (DSSEQ, DSSTDY, etc.)
-# derive_seq(
-#   tgt_var = "DSSEQ",
-#   rec_vars = c("USUBJID", "DSTERM")
-)
-# TODO: Select and order final variables
+# Map date/time variables
+ds <- ds %>%
+  # Map DSDTC from DSDTCOL (date) and DSTMCOL (time)
+  # NOTE: assign_datetime was giving error (Can't combine `true` <iso8601> and `false` <iso8601>.)
+  # So here we manually create iso8601
+  mutate(
+    DSDTC = as.character(
+      create_iso8601(ds_raw$DSDTCOL, ds_raw$DSTMCOL, .format = c("m-d-y", "H:M"))
+    )
+  ) %>%
+  # Map DSSTDTC from IT.DSSTDAT
+  assign_datetime(
+    raw_dat = ds_raw,
+    raw_var = "IT.DSSTDAT",
+    tgt_var = "DSSTDTC",
+    raw_fmt = c("m-d-y"),
+    id_vars = oak_id_vars()
+  ) %>%
+  
+  # Map VISIT and VISITNUM
+  assign_ct(
+    raw_dat = ds_raw,
+    raw_var = "INSTANCE",
+    tgt_var = "VISIT",
+    ct_spec = study_ct,
+    ct_clst = "VISIT",
+    id_vars = oak_id_vars()
+  ) %>%
+  assign_ct(
+    raw_dat = ds_raw,
+    raw_var = "INSTANCE",
+    tgt_var = "VISITNUM",
+    ct_spec = study_ct,
+    ct_clst = "VISITNUM",
+    id_vars = oak_id_vars()
+  )
 
+# Derive additional variables (DSSEQ, DSSTDY, etc.)
+
+ds <- ds %>%
+  dplyr::mutate(
+    STUDYID = "CDISCPILOT01",
+    DOMAIN = "DS",
+    USUBJID = paste0("01-", ds_raw$PATNUM),
+    DSTERM = toupper(DSTERM),
+    DSDECOD = toupper(DSDECOD)
+  ) %>%
+  derive_seq(
+    tgt_var = "DSSEQ",
+    rec_vars = c("USUBJID", "DSTERM")
+  ) %>%
+  derive_study_day(
+    sdtm_in = .,
+    dm_domain = dm,
+    tgdt = "DSSTDTC",
+    refdt = "RFSTDTC",
+    study_day_var = "DSSTDY"
+  )
+
+# Select and order final variables
+
+ds <- ds %>%
+  select(
+    STUDYID, DOMAIN, USUBJID, DSSEQ, DSTERM, DSDECOD,
+    DSCAT, VISITNUM, VISIT, DSDTC, DSSTDTC, DSSTDY
+  )
 # TODO: Save output dataset
