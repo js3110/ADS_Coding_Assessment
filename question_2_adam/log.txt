@@ -1,0 +1,136 @@
+Warning messages:
+1: Check duplicates: vs dataset contains
+duplicate records with respect to `STUDYID`,
+`USUBJID`, and `ADT`
+ℹ Run `admiral::get_duplicates_dataset()` to
+  access the duplicate records 
+2: Check duplicates: ae dataset contains
+duplicate records with respect to `STUDYID`,
+`USUBJID`, and `ADT`
+ℹ Run `admiral::get_duplicates_dataset()` to
+  access the duplicate records 
+3: Check duplicates: ds dataset contains
+duplicate records with respect to `STUDYID`,
+`USUBJID`, and `ADT`
+ℹ Run `admiral::get_duplicates_dataset()` to
+  access the duplicate records 
+4: Check duplicates: the dataset which consists
+of all records selected for any of the events
+defined by `events` contains duplicate
+records with respect to `STUDYID`, `USUBJID`,
+and `LSTAVLDT`
+ℹ Run `admiral::get_duplicates_dataset()` to
+  access the duplicate records 
+
+
+=== Execution Summary ===
+Date: 2026-03-26 00:30:45 
+Dimensions: 306 rows x 34 columns
+
+tibble [306 × 34] (S3: tbl_df/tbl/data.frame)
+ $ STUDYID : chr [1:306] "CDISCPILOT01" "CDISCPILOT01" "CDISCPILOT01" "CDISCPILOT01" ...
+  ..- attr(*, "label")= chr "Study Identifier"
+ $ USUBJID : chr [1:306] "01-701-1015" "01-701-1023" "01-701-1028" "01-701-1033" ...
+  ..- attr(*, "label")= chr "Unique Subject Identifier"
+ $ SUBJID  : chr [1:306] "1015" "1023" "1028" "1033" ...
+  ..- attr(*, "label")= chr "Subject Identifier for the Study"
+ $ RFSTDTC : chr [1:306] "2014-01-02" "2012-08-05" "2013-07-19" "2014-03-18" ...
+  ..- attr(*, "label")= chr "Subject Reference Start Date/Time"
+ $ RFENDTC : chr [1:306] "2014-07-02" "2012-09-02" "2014-01-14" "2014-04-14" ...
+  ..- attr(*, "label")= chr "Subject Reference End Date/Time"
+ $ RFXSTDTC: chr [1:306] "2014-01-02" "2012-08-05" "2013-07-19" "2014-03-18" ...
+  ..- attr(*, "label")= chr "Date/Time of First Study Treatment"
+ $ RFXENDTC: chr [1:306] "2014-07-02" "2012-09-01" "2014-01-14" "2014-03-31" ...
+  ..- attr(*, "label")= chr "Date/Time of Last Study Treatment"
+ $ RFICDTC : chr [1:306] NA NA NA NA ...
+  ..- attr(*, "label")= chr "Date/Time of Informed Consent"
+ $ RFPENDTC: chr [1:306] "2014-07-02T11:45" "2013-02-18" "2014-01-14T11:10" "2014-09-15" ...
+  ..- attr(*, "label")= chr "Date/Time of End of Participation"
+ $ DTHDTC  : chr [1:306] NA NA NA NA ...
+  ..- attr(*, "label")= chr "Date/Time of Death"
+ $ DTHFL   : chr [1:306] NA NA NA NA ...
+  ..- attr(*, "label")= chr "Subject Death Flag"
+ $ SITEID  : chr [1:306] "701" "701" "701" "701" ...
+  ..- attr(*, "label")= chr "Study Site Identifier"
+ $ BRTHDTC : chr [1:306] "1950-12-26" "1948-07-22" "1942-07-11" "1940-03-10" ...
+  ..- attr(*, "label")= chr "Date/Time of Birth"
+ $ AGE     : num [1:306] 63 64 71 74 77 85 59 68 81 84 ...
+  ..- attr(*, "label")= chr "Age"
+ $ AGEU    : chr [1:306] "YEARS" "YEARS" "YEARS" "YEARS" ...
+  ..- attr(*, "label")= chr "Age Units"
+ $ SEX     : chr [1:306] "F" "M" "M" "M" ...
+  ..- attr(*, "label")= chr "Sex"
+ $ RACE    : chr [1:306] "WHITE" "WHITE" "WHITE" "WHITE" ...
+  ..- attr(*, "label")= chr "Race"
+ $ ETHNIC  : chr [1:306] "HISPANIC OR LATINO" "HISPANIC OR LATINO" "NOT HISPANIC OR LATINO" "NOT HISPANIC OR LATINO" ...
+  ..- attr(*, "label")= chr "Ethnicity"
+ $ ARMCD   : chr [1:306] "Pbo" "Pbo" "Xan_Hi" "Xan_Lo" ...
+  ..- attr(*, "label")= chr "Planned Arm Code"
+ $ ARM     : chr [1:306] "Placebo" "Placebo" "Xanomeline High Dose" "Xanomeline Low Dose" ...
+  ..- attr(*, "label")= chr "Description of Planned Arm"
+ $ ACTARMCD: chr [1:306] "Pbo" "Pbo" "Xan_Hi" "Xan_Lo" ...
+  ..- attr(*, "label")= chr "Actual Arm Code"
+ $ ACTARM  : chr [1:306] "Placebo" "Placebo" "Xanomeline High Dose" "Xanomeline Low Dose" ...
+  ..- attr(*, "label")= chr "Description of Actual Arm"
+ $ COUNTRY : chr [1:306] "USA" "USA" "USA" "USA" ...
+  ..- attr(*, "label")= chr "Country"
+ $ DMDTC   : chr [1:306] "2013-12-26" "2012-07-22" "2013-07-11" "2014-03-10" ...
+  ..- attr(*, "label")= chr "Date/Time of Collection"
+ $ DMDY    : num [1:306] -7 -14 -8 -8 -7 -21 NA -9 -13 -7 ...
+  ..- attr(*, "label")= chr "Study Day of Collection"
+ $ AGEGR9  : chr [1:306] ">50" ">50" ">50" ">50" ...
+ $ AGEGR9N : num [1:306] 3 3 3 3 3 3 3 3 3 3 ...
+ $ TRTSDTM : POSIXct[1:306], format:  ...
+ $ TRTSTMF : chr [1:306] "H" "H" "H" "H" ...
+ $ TRTEDTM : POSIXct[1:306], format:  ...
+ $ TRTETMF : chr [1:306] "H" "H" "H" "H" ...
+ $ ITTFL   : chr [1:306] "Y" "Y" "Y" "Y" ...
+ $ TRTEDT  : Date[1:306], format:  ...
+ $ LSTAVLDT: Date[1:306], format:  ...
+ - attr(*, "label")= chr "Demographics"
+
+R version 4.4.1 (2024-06-14 ucrt)
+Platform: x86_64-w64-mingw32/x64
+Running under: Windows 11 x64 (build 22631)
+
+Matrix products: default
+
+
+locale:
+[1] LC_COLLATE=English_United Kingdom.utf8 
+[2] LC_CTYPE=English_United Kingdom.utf8   
+[3] LC_MONETARY=English_United Kingdom.utf8
+[4] LC_NUMERIC=C                           
+[5] LC_TIME=English_United Kingdom.utf8    
+
+time zone: Europe/Zurich
+tzcode source: internal
+
+attached base packages:
+[1] stats     graphics  grDevices utils    
+[5] datasets  methods   base     
+
+other attached packages:
+[1] tidyr_1.3.2          
+[2] dplyr_1.2.0          
+[3] admiral_1.4.1        
+[4] pharmaversesdtm_1.4.0
+
+loaded via a namespace (and not attached):
+ [1] vctrs_0.7.1       cli_3.6.5        
+ [3] metacore_0.2.1    knitr_1.51       
+ [5] xfun_0.56         rlang_1.1.7      
+ [7] otel_0.2.0        stringi_1.8.7    
+ [9] purrr_1.2.1       generics_0.1.4   
+[11] glue_1.8.0        roxygen2_7.3.3   
+[13] hms_1.1.4         readxl_1.4.5     
+[15] admiraldev_1.4.0  cellranger_1.1.0 
+[17] evaluate_1.0.5    tibble_3.3.1     
+[19] tzdb_0.5.0        lifecycle_1.0.5  
+[21] stringr_1.6.0     compiler_4.4.1   
+[23] timechange_0.4.0  pkgconfig_2.0.3  
+[25] rstudioapi_0.17.1 R6_2.6.1         
+[27] readr_2.2.0       tidyselect_1.2.1 
+[29] pillar_1.11.1     magrittr_2.0.4   
+[31] withr_3.0.2       tools_4.4.1      
+[33] lubridate_1.9.5   xml2_1.5.2       

@@ -17,15 +17,10 @@ sink(con, type = "output")
 sink(con, type = "message", append = TRUE)
 
 # Load required libraries
-library(metacore)
-library(metatools)
 library(pharmaversesdtm)
 library(admiral)
-library(xportr)
 library(dplyr)
 library(tidyr)
-library(lubridate)
-library(stringr)
 
 # Read in input SDTM data
 dm <- pharmaversesdtm::dm
@@ -33,18 +28,6 @@ ds <- pharmaversesdtm::ds
 ex <- pharmaversesdtm::ex
 ae <- pharmaversesdtm::ae
 vs <- pharmaversesdtm::vs
-suppdm <- pharmaversesdtm::suppdm
-
-# Combine Parent and Supp
-dm_suppdm <- combine_supp(dm, suppdm)
-
-# Read in metacore object
-metacore <- spec_to_metacore(
-  path = "./question_2_adam/safety_specs.xlsx",
-  # All datasets are described in the same sheet
-  where_sep_sheet = FALSE
-) %>%
-  select_dataset("ADSL")
 
 # --- Start ADSL from DM ------------------------------------------------------
 # DM is the basis of ADSL: one row per subject
@@ -61,12 +44,12 @@ agegr9_lookup <- exprs(
   !is.na(AGE),             ">50",        3
 )
 
-adsl_cat <- derive_vars_cat(
+adsl <- derive_vars_cat(
   dataset = adsl,
   definition = agegr9_lookup
 )
-# --- Derive TRTSDTM and TRTSTMF ----------------------------------------------
-# TODO: First valid exposure datetime with time imputation
+# --- Derive TRTSDTM and TRTSTMF and TRTESDTM ----------------------------------------------
+# First valid exposure datetime with time imputation
 
 # Derive EXSTDTM and EXSTTMF from EXSTDTC
 ex_ext <- ex %>%
@@ -75,10 +58,15 @@ ex_ext <- ex %>%
     new_vars_prefix = "EXST",
     highest_imputation = "h",
     flag_imputation = "time"
+  ) %>%
+  derive_vars_dtm(
+    dtc = EXENDTC,
+    new_vars_prefix = "EXEN",
+    time_imputation = "last"
   )
 
 # Treatment Start Datetime
-adsl_cat <- adsl_cat %>%
+adsl <- adsl %>%
   derive_vars_merged(
     dataset_add = ex_ext,
     filter_add = (EXDOSE > 0 |
@@ -88,15 +76,90 @@ adsl_cat <- adsl_cat %>%
     order = exprs(EXSTDTM, EXSEQ),
     mode = "first",
     by_vars = exprs(STUDYID, USUBJID)
+  ) %>%
+  # Treatment End Datetime
+  derive_vars_merged(
+    dataset_add = ex_ext,
+    filter_add = (EXDOSE > 0 |
+                    (EXDOSE == 0 &
+                       str_detect(EXTRT, "PLACEBO"))) & !is.na(EXENDTM),
+    new_vars = exprs(TRTEDTM = EXENDTM, TRTETMF = EXENTMF),
+    order = exprs(EXENDTM, EXSEQ),
+    mode = "last",
+    by_vars = exprs(STUDYID, USUBJID)
   )
 # --- Derive ITTFL -------------------------------------------------------------
-# TODO: "Y" if ARM is not missing, else "N"
+# "Y" if ARM is not missing, else "N"
+adsl <- adsl %>%
+  mutate(ITTFL = ifelse(is.na(ARM), "N", "Y"))
 
 # --- Derive LSTAVLDT ----------------------------------------------------------
-# TODO: Last known alive date from VS, AE, DS, and treatment dates
+#  Last known alive date from VS, AE, DS, and treatment dates
+# VS: convert VSDTC to date, filter valid results
+vs_dt <- vs %>%
+  mutate(ADT = convert_dtc_to_dt(VSDTC))
+
+# AE: convert AESTDTC to date
+ae_dt <- ae %>%
+  mutate(ADT = convert_dtc_to_dt(AESTDTC))
+
+# DS: convert DSSTDTC to date
+ds_dt <- ds %>%
+  mutate(ADT = convert_dtc_to_dt(DSSTDTC))
+
+adsl <- adsl %>%
+  derive_vars_dtm_to_dt(exprs(TRTEDTM))
+
+# Combine all dates and find the last date per subject
+adsl <- adsl %>%
+  derive_vars_extreme_event(
+    by_vars = exprs(STUDYID, USUBJID),
+    events = list(
+      event(
+        dataset_name = "vs",
+        condition = !is.na(ADT) &
+          !(is.na(VSSTRESN) & is.na(VSSTRESC)), # Check valid results
+        order = exprs(ADT),
+        mode = "last",
+        set_values_to = exprs(LSTAVLDT = ADT)
+      ),
+      event(
+        dataset_name = "ae",
+        condition = !is.na(ADT),
+        order = exprs(ADT),
+        mode = "last",
+        set_values_to = exprs(LSTAVLDT = ADT)
+      ),
+      event(
+        dataset_name = "ds",
+        condition = !is.na(ADT),
+        order = exprs(ADT),
+        mode = "last",
+        set_values_to = exprs(LSTAVLDT = ADT)
+      ),
+      event(
+        dataset_name = "adsl",
+        condition = !is.na(TRTEDTM),
+        order = exprs(TRTEDTM),
+        mode = "last",
+        set_values_to = exprs(LSTAVLDT = TRTEDT)
+      )
+    ),
+    source_datasets = list(vs = vs_dt, ae = ae_dt, ds = ds_dt, adsl = adsl),
+    order = exprs(LSTAVLDT),
+    mode = "last",
+    new_vars = exprs(LSTAVLDT)
+  )
 
 # --- Select and order final variables -----------------------------------------
-# TODO: Select relevant ADSL variables
+# Select relevant ADSL variables
+adsl_final <- adsl %>%
+  select(
+    STUDYID, USUBJID, SUBJID, SITEID, AGE, AGEU, SEX, RACE, ETHNIC,
+    ARM, ARMCD, ACTARM, ACTARMCD,
+    AGEGR9, AGEGR9N, TRTSDTM, TRTSTMF, TRTEDTM, TRTETMF,
+    ITTFL, LSTAVLDT
+  )
 
 # --- Save output dataset ------------------------------------------------------
 # TODO: write.csv(adsl, "question_2_adam/adsl.csv", row.names = FALSE)
