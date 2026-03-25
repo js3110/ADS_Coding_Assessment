@@ -162,9 +162,7 @@ adsl_final <- adsl %>%
   )
 
 # --- Save output dataset ------------------------------------------------------
-# write.csv(adsl, "question_2_adam/adsl.csv", row.names = FALSE)
 
-# Save output dataset
 write.csv(adsl_final, "question_2_adam/adsl.csv", row.names = FALSE)
 
 # --- Log summary --------------------------------------------------------------
