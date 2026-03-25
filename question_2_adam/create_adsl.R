@@ -162,13 +162,16 @@ adsl_final <- adsl %>%
   )
 
 # --- Save output dataset ------------------------------------------------------
-# TODO: write.csv(adsl, "question_2_adam/adsl.csv", row.names = FALSE)
+# write.csv(adsl, "question_2_adam/adsl.csv", row.names = FALSE)
+
+# Save output dataset
+write.csv(adsl_final, "question_2_adam/adsl.csv", row.names = FALSE)
 
 # --- Log summary --------------------------------------------------------------
 cat("\n\n=== Execution Summary ===\n")
 cat("Date:", format(Sys.time()), "\n")
-cat("Dimensions:", nrow(adsl), "rows x", ncol(adsl), "columns\n\n")
-str(adsl)
+cat("Dimensions:", nrow(adsl_final), "rows x", ncol(adsl_final), "columns\n\n")
+str(adsl_final)
 cat("\n")
 sessionInfo()
 
