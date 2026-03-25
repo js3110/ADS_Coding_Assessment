@@ -3,7 +3,7 @@
 
 
 === Execution Summary ===
-Date: 2026-03-25 23:19:42 
+Date: 2026-03-25 23:21:44 
 Dimensions: 850 rows x 12 columns
 
 tibble [850 × 12] (S3: tbl_df/tbl/data.frame)

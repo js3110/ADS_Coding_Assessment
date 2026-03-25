@@ -26,9 +26,6 @@ library(dplyr)
 ds_raw <- pharmaverseraw::ds_raw
 study_ct <- read.csv("question_1_sdtm/sdtm_ct.csv")
 
-# Read in DM domain
-dm <- pharmaversesdtm::dm
-
 # Map raw variables to SDTM variables using sdtm.oak
 # Create oak ID vars
 ds_raw <- ds_raw %>%
