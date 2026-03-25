@@ -1,6 +1,9 @@
-DS Domain Creation Log
-Date: 2026-03-25 23:15:00 
+ℹ These terms could not be mapped per the controlled terminology: "Ambul Ecg Removal", "Unscheduled 6.1", "Unscheduled 1.1", "Unscheduled 5.1", "Unscheduled 4.1", "Unscheduled 8.2", and "Unscheduled 13.1".
+ℹ These terms could not be mapped per the controlled terminology: "Ambul Ecg Removal", "Unscheduled 6.1", "Unscheduled 1.1", "Unscheduled 5.1", "Unscheduled 4.1", "Unscheduled 8.2", and "Unscheduled 13.1".
 
+
+=== Execution Summary ===
+Date: 2026-03-25 23:19:42 
 Dimensions: 850 rows x 12 columns
 
 tibble [850 × 12] (S3: tbl_df/tbl/data.frame)
