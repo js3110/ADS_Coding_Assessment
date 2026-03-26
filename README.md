@@ -28,6 +28,7 @@ question_3_tlg/             # AE Reporting (Tables & Visualizations)
   plot1_ae_severity_bar.png     # Stacked bar chart — severity by treatment
   plot1_ae_severity_heatmap.png # Heatmap — severity by treatment
   plot2_top10_ae.png            # Top 10 AEs with 95% Clopper-Pearson CIs
+  ae_summary_interactive.html   # Interactive searchable/sortable table
   log.txt                       # Execution log
 
 question_4_python/          # GenAI Clinical Data Assistant
@@ -84,6 +85,7 @@ question_4_python/          # GenAI Clinical Data Assistant
 - **Plot 1a:** Stacked bar chart of AE severity (AESEV) by treatment arm (ACTARM)
 - **Plot 1b:** Heatmap of AE counts by severity and treatment (bonus)
 - **Plot 2:** Top 10 most frequent AEs (by unique subject count) with 95% Clopper-Pearson exact binomial confidence intervals
+- **Interactive table:** Searchable, filterable, sortable `{reactable}` table (`ae_summary_interactive.html`) with rows grouped by System Organ Class
 
 ## Question 4: GenAI Clinical Data Assistant
 
@@ -104,12 +106,19 @@ User Question → _build_prompt() → _call_llm() → _parse_response() → _exe
 - **Mock LLM:** Rule-based keyword matching that simulates LLM behavior — covers severity, seriousness, body system, causality, outcome, action taken, life-threatening, death, and hospitalization queries
 - **Real LLM:** OpenAI integration via LangChain (`ChatOpenAI`) — drop-in replacement by setting `use_mock=False` and providing an API key
 - **Flexible matching:** `str.contains()` for partial, case-insensitive matching
+- **Multi-filter support:** Handles combined queries like "subjects with severe cardiac AEs" — detects multiple concepts, returns a filters array, and applies them with AND logic
+- **Interactive mode:** Run `python clinical_data_agent.py` to ask questions in the terminal
 
 **Running the agent:**
 ```bash
 cd question_4_python
 pip install -r requirements.txt
+
+# Run 3 example queries
 python test_queries.py
+
+# Interactive mode — ask questions in the terminal
+python clinical_data_agent.py
 ```
 
 ## Running the Scripts
