@@ -17,7 +17,7 @@ def print_result(result: dict) -> None:
     """Pretty-print a query result."""
     print("=" * 70)
     print(f"Question: {result['question']}")
-    print(f"Parsed filter: {result['parsed_filter']}")
+    print(f"Filters applied: {result['parsed_filters']}")
     print(f"Number of subjects: {result['count']}")
     print(f"Subject IDs: {result['subjects']}")
     print("=" * 70)
@@ -42,3 +42,10 @@ result3 = agent.query(
     "Show me subjects who had headache"
 )
 print_result(result3)
+
+# --- Query 4: Multi-filter query (above and beyond) --------------------------
+# Combines severity + body system in a single question
+result4 = agent.query(
+    "Show me subjects with severe cardiac AEs"
+)
+print_result(result4)

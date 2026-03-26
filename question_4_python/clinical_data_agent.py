@@ -140,15 +140,20 @@ adverse events in a clinical trial, extract the filtering criteria.
 
 {schema}
 
-Return a JSON object with:
+Return a JSON object with a "filters" array. Each filter has:
 - "target_column": the column name to filter on
 - "filter_value": the value to search for (use UPPERCASE for standard terms)
 
+For single-filter questions, return one filter. For multi-criteria questions,
+return multiple filters (they will be combined with AND logic).
+
 Examples:
-- "Show me subjects with severe AEs" → {{"target_column": "AESEV", "filter_value": "SEVERE"}}
-- "Which patients had headache?" → {{"target_column": "AETERM", "filter_value": "HEADACHE"}}
-- "Subjects with cardiac body system AEs" → {{"target_column": "AESOC", "filter_value": "CARDIAC DISORDERS"}}
-- "Give me subjects who had serious adverse events" → {{"target_column": "AESER", "filter_value": "Y"}}
+- "Show me subjects with severe AEs"
+  → {{"filters": [{{"target_column": "AESEV", "filter_value": "SEVERE"}}]}}
+- "Which patients had headache?"
+  → {{"filters": [{{"target_column": "AETERM", "filter_value": "HEADACHE"}}]}}
+- "Subjects with severe cardiac AEs"
+  → {{"filters": [{{"target_column": "AESEV", "filter_value": "SEVERE"}}, {{"target_column": "AESOC", "filter_value": "CARDIAC DISORDERS"}}]}}
 
 Question: {question}
 
@@ -233,75 +238,80 @@ class ClinicalTrialDataAgent:
     def _mock_llm(self, prompt: str) -> str:
         """
         Mock LLM that uses keyword matching to simulate LLM responses.
-        Implements the full Prompt → Parse → Execute flow without an API key.
+        Supports multi-filter queries (e.g., "severe cardiac AEs").
 
         The mock extracts the question from the prompt and applies rule-based
-        mapping to determine the target column and filter value.
+        mapping to determine one or more target column + filter value pairs.
 
         Args:
             prompt: The formatted prompt string
 
         Returns:
-            JSON string with target_column and filter_value
+            JSON string with a filters array
         """
         # Extract the question from the prompt
         question = prompt.split("Question: ")[-1].split("\n")[0].strip().lower()
+
+        filters = []
 
         # Severity / intensity mapping
         if any(word in question for word in ["severity", "intense", "intensity",
                                               "severe", "mild", "moderate"]):
             for severity in ["severe", "moderate", "mild"]:
                 if severity in question:
-                    return json.dumps({
+                    filters.append({
                         "target_column": "AESEV",
                         "filter_value": severity.upper()
                     })
-            return json.dumps({"target_column": "AESEV", "filter_value": ""})
+                    break
 
         # Serious AE mapping
         if any(word in question for word in COLUMN_SYNONYMS["AESER"]):
-            return json.dumps({"target_column": "AESER", "filter_value": "Y"})
+            filters.append({"target_column": "AESER", "filter_value": "Y"})
 
         # Relationship / causality mapping
         if any(word in question for word in COLUMN_SYNONYMS["AEREL"]):
             for rel in ["probable", "possible", "none", "remote"]:
                 if rel in question:
-                    return json.dumps({
+                    filters.append({
                         "target_column": "AEREL",
                         "filter_value": rel.upper()
                     })
+                    break
 
         # Outcome mapping
         if any(word in question for word in COLUMN_SYNONYMS["AEOUT"]):
             for outcome in ["recovered", "resolved", "not recovered",
                             "not resolved", "fatal"]:
                 if outcome in question:
-                    return json.dumps({
+                    filters.append({
                         "target_column": "AEOUT",
                         "filter_value": outcome.upper()
                     })
+                    break
 
         # Action taken mapping
         if any(word in question for word in COLUMN_SYNONYMS["AEACN"]):
             for action in ["dose not changed", "drug withdrawn",
                            "dose reduced", "not applicable"]:
                 if action in question:
-                    return json.dumps({
+                    filters.append({
                         "target_column": "AEACN",
                         "filter_value": action.upper()
                     })
+                    break
 
         # Life threatening mapping
         if any(word in question for word in COLUMN_SYNONYMS["AESLIFE"]):
-            return json.dumps({"target_column": "AESLIFE", "filter_value": "Y"})
+            filters.append({"target_column": "AESLIFE", "filter_value": "Y"})
 
         # Death mapping
         if any(word in question for word in COLUMN_SYNONYMS["AESDTH"]):
-            return json.dumps({"target_column": "AESDTH", "filter_value": "Y"})
+            filters.append({"target_column": "AESDTH", "filter_value": "Y"})
 
         # Hospitalization mapping
         if any(word in question for word in COLUMN_SYNONYMS["AESHOSP"]):
-            return json.dumps({"target_column": "AESHOSP", "filter_value": "Y"})
+            filters.append({"target_column": "AESHOSP", "filter_value": "Y"})
 
         # Body system / organ class mapping
         body_systems = {
@@ -324,14 +334,18 @@ class ClinicalTrialDataAgent:
         }
         for keyword, soc_value in body_systems.items():
             if keyword in question:
-                return json.dumps({
+                filters.append({
                     "target_column": "AESOC",
                     "filter_value": soc_value
                 })
+                break
 
-        # Default: assume the question refers to a specific AE term
-        value = self._extract_ae_term(question)
-        return json.dumps({"target_column": "AETERM", "filter_value": value})
+        # If no filters matched, assume it's a specific AE term
+        if not filters:
+            value = self._extract_ae_term(question)
+            filters.append({"target_column": "AETERM", "filter_value": value})
+
+        return json.dumps({"filters": filters})
 
     def _extract_ae_term(self, question: str) -> str:
         """Extract the AE term from the question by removing filler words and punctuation."""
@@ -351,11 +365,15 @@ class ClinicalTrialDataAgent:
         """
         Parse the LLM response JSON into a dictionary.
 
+        Supports both single-filter and multi-filter formats:
+        - Single: {"target_column": "X", "filter_value": "Y"}
+        - Multi:  {"filters": [{"target_column": "X", "filter_value": "Y"}, ...]}
+
         Args:
             response: JSON string from LLM
 
         Returns:
-            Dictionary with target_column and filter_value
+            Dictionary with a "filters" list
         """
         try:
             # Handle cases where LLM wraps JSON in markdown code blocks
@@ -365,39 +383,51 @@ class ClinicalTrialDataAgent:
                 cleaned = cleaned.rstrip("`").strip()
             parsed = json.loads(cleaned)
 
-            # Validate required keys
-            if "target_column" not in parsed or "filter_value" not in parsed:
+            # Normalize to multi-filter format
+            if "filters" in parsed:
+                return parsed
+            elif "target_column" in parsed and "filter_value" in parsed:
+                # Backwards-compatible: wrap single filter in a list
+                return {"filters": [parsed]}
+            else:
                 raise ValueError("Response missing required keys")
 
-            return parsed
         except (json.JSONDecodeError, ValueError) as e:
             print(f"Error parsing LLM response: {e}")
             print(f"Raw response: {response}")
-            return {"target_column": "", "filter_value": "", "error": str(e)}
+            return {"filters": [], "error": str(e)}
 
     def _execute_query(self, parsed: dict) -> dict:
         """
-        Apply the parsed filter to the dataset and return results.
+        Apply the parsed filters to the dataset and return results.
 
+        Multiple filters are combined with AND logic.
         Uses case-insensitive partial matching via str.contains for flexibility.
 
         Args:
-            parsed: Dictionary with target_column and filter_value
+            parsed: Dictionary with a "filters" list
 
         Returns:
             Dictionary with count and list of matching USUBJIDs
         """
-        col = parsed.get("target_column", "")
-        val = parsed.get("filter_value", "")
+        filters = parsed.get("filters", [])
 
-        if not col or not val or col not in self.df.columns:
+        if not filters:
             return {"count": 0, "subjects": []}
 
-        # Apply filter — case-insensitive partial matching
-        mask = self.df[col].astype(str).str.upper().str.contains(
-            val.upper(), na=False
-        )
-        filtered = self.df[mask]
+        # Start with all rows, then apply each filter with AND logic
+        filtered = self.df
+        for f in filters:
+            col = f.get("target_column", "")
+            val = f.get("filter_value", "")
+
+            if not col or not val or col not in filtered.columns:
+                continue
+
+            mask = filtered[col].astype(str).str.upper().str.contains(
+                val.upper(), na=False
+            )
+            filtered = filtered[mask]
 
         # Get unique subjects
         subjects = filtered["USUBJID"].unique().tolist()
@@ -433,7 +463,7 @@ class ClinicalTrialDataAgent:
 
         return {
             "question": question,
-            "parsed_filter": parsed,
+            "parsed_filters": parsed.get("filters", []),
             "count": result["count"],
             "subjects": result["subjects"]
         }
@@ -459,7 +489,7 @@ if __name__ == "__main__":
             continue
 
         result = agent.query(q)
-        print(f"  Filter: {result['parsed_filter']}")
+        print(f"  Filters: {result['parsed_filters']}")
         print(f"  Subjects found: {result['count']}")
         print(f"  IDs: {result['subjects']}")
 
