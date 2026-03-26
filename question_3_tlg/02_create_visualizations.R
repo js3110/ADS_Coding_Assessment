@@ -29,13 +29,13 @@ adae <- pharmaverseadam::adae
 adsl <- pharmaverseadam::adsl
 
 # --- Plot 1: AE Severity Distribution by Treatment ---------------------------
-# TODO: Create bar chart or heatmap
+# Create bar chart or heatmap
 #   - x-axis: treatment group (ACTARM)
 #   - fill/color: severity (AESEV)
 #   - Save as plot1_ae_severity.png
 
 # --- Plot 2: Top 10 Most Frequent AEs with 95% CI ----------------------------
-# TODO: Calculate incidence rates and 95% CI for top 10 AEs
+# Calculate incidence rates and 95% CI for top 10 AEs
 #   - Identify top 10 AEs by frequency (AETERM)
 #   - Calculate incidence rate per treatment group
 #   - Add 95% confidence intervals
