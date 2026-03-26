@@ -101,8 +101,8 @@ rt_table <- reactable(
   )
 )
 
-htmlwidgets::saveWidget(rt_table, "question_3_tlg/ae_summary_interactive.html",
-                        selfcontained = TRUE)
+# Save as self-contained HTML (no extra files/folders)
+htmltools::save_html(rt_table, "question_3_tlg/ae_summary_interactive.html")
 
 # --- Log summary --------------------------------------------------------------
 cat("\n\n=== Execution Summary ===\n")
