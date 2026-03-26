@@ -26,6 +26,7 @@ library(pharmaverseadam)
 library(gtsummary)
 library(dplyr)
 library(gt)
+library(tidyr)
 
 # --- Load input data ----------------------------------------------------------
 adae <- pharmaverseadam::adae
@@ -64,10 +65,44 @@ tbl <- adae |>
 tbl
 
 # --- Save output --------------------------------------------------------------
-# Save as ae_summary_table.html
+# Save as ae_summary_table.html (static)
 tbl %>%
   as_gt() %>%
   gt::gtsave("question_3_tlg/ae_summary_table.html")
+
+# --- Interactive table using {reactable} --------------------------------------
+# Searchable/sortable version of the AE summary for exploratory use
+library(reactable)
+
+# Build a subject-level summary: count unique subjects per AESOC, AETERM, ACTARM
+ae_summary <- adae %>%
+  distinct(USUBJID, AESOC, AETERM, ACTARM) %>%
+  count(AESOC, AETERM, ACTARM, name = "n_subjects") %>%
+  pivot_wider(
+    names_from = ACTARM,
+    values_from = n_subjects,
+    values_fill = 0
+  ) %>%
+  arrange(AESOC, desc(rowSums(select(., where(is.numeric)))))
+
+rt_table <- reactable(
+  ae_summary,
+  searchable = TRUE,
+  filterable = TRUE,
+  sortable = TRUE,
+  pagination = TRUE,
+  defaultPageSize = 25,
+  striped = TRUE,
+  highlight = TRUE,
+  groupBy = "AESOC",
+  columns = list(
+    AESOC = colDef(name = "System Organ Class", minWidth = 200),
+    AETERM = colDef(name = "Reported Term", minWidth = 200)
+  )
+)
+
+htmlwidgets::saveWidget(rt_table, "question_3_tlg/ae_summary_interactive.html",
+                        selfcontained = TRUE)
 
 # --- Log summary --------------------------------------------------------------
 cat("\n\n=== Execution Summary ===\n")
