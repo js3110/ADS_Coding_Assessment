@@ -334,14 +334,16 @@ class ClinicalTrialDataAgent:
         return json.dumps({"target_column": "AETERM", "filter_value": value})
 
     def _extract_ae_term(self, question: str) -> str:
-        """Extract the AE term from the question by removing filler words."""
+        """Extract the AE term from the question by removing filler words and punctuation."""
+        # Strip punctuation first
+        cleaned = re.sub(r"[?.!,;:]", "", question)
         filler = {"subjects", "patients", "with", "who", "had", "have",
                   "the", "in", "give", "me", "show", "list", "adverse",
                   "events", "aes", "event", "ae", "from", "of", "a", "an",
                   "experienced", "reported", "suffering", "any", "all",
                   "which", "what", "are", "were", "that", "those", "get",
                   "find", "about", "did", "do", "how", "many"}
-        words = question.split()
+        words = cleaned.split()
         filtered = [w for w in words if w not in filler]
         return " ".join(filtered).upper().strip()
 
