@@ -67,12 +67,14 @@ tbl <- adae |>
   add_overall() |>
   sort_hierarchical()
 
-  
-
+# Check
 tbl
 
 # --- Save output --------------------------------------------------------------
-# TODO: Save as ae_summary_table.html
+# Save as ae_summary_table.html
+tbl %>%
+  as_gt() %>%
+  gt::gtsave("question_3_tlg/ae_summary_table.html")
 
 # --- Log summary --------------------------------------------------------------
 cat("\n\n=== Execution Summary ===\n")
