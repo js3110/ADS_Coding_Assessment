@@ -439,3 +439,28 @@ class ClinicalTrialDataAgent:
         }
 
 
+# --- Interactive mode ---------------------------------------------------------
+# Run directly to ask questions interactively in the terminal.
+
+if __name__ == "__main__":
+    import sys
+
+    data_path = sys.argv[1] if len(sys.argv) > 1 else "question_4_python/adae.csv"
+    agent = ClinicalTrialDataAgent(data_path, use_mock=True)
+
+    print("Clinical Trial Data Agent (type 'quit' to exit)")
+    print("-" * 50)
+
+    while True:
+        q = input("\nAsk a question: ").strip()
+        if q.lower() in ("quit", "exit", "q"):
+            break
+        if not q:
+            continue
+
+        result = agent.query(q)
+        print(f"  Filter: {result['parsed_filter']}")
+        print(f"  Subjects found: {result['count']}")
+        print(f"  IDs: {result['subjects']}")
+
+
