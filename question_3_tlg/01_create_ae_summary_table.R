@@ -59,7 +59,7 @@ tbl <- adae |>
     label = "..ard_hierarchical_overall.." ~ "Treatment Emergent AEs"
   ) %>%
   add_overall() |>
-  sort_hierarchical()
+  sort_hierarchical() # sort descending
 
 # --- Save output --------------------------------------------------------------
 # Save as ae_summary_table.html (static)

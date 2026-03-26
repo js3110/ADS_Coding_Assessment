@@ -106,7 +106,7 @@ ds <-
 ds <- ds %>%
   # Map DSDTC from DSDTCOL (date) and DSTMCOL (time)
   # NOTE: assign_datetime was giving error (Can't combine `true` <iso8601> and `false` <iso8601>.)
-  # So here we manually create iso8601
+  # So manually created iso8601
   mutate(
     DSDTC = as.character(
       create_iso8601(ds_raw$DSDTCOL, ds_raw$DSTMCOL, .format = c("m-d-y", "H:M"))
