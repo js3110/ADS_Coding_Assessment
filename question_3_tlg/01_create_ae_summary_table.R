@@ -61,9 +61,6 @@ tbl <- adae |>
   add_overall() |>
   sort_hierarchical()
 
-# Check
-tbl
-
 # --- Save output --------------------------------------------------------------
 # Save as ae_summary_table.html (static)
 tbl %>%
