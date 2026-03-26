@@ -51,7 +51,6 @@ question_4_python/          # GenAI Clinical Data Assistant
 
 **Key decisions:**
 - DSDECOD mapped with `assign_no_ct()` instead of `assign_ct()` because the study controlled terminology `collected_value` entries did not match the raw data values, and the CRF instructions support direct mapping
-- Added C114118 codelist entry for "RANDOMIZED" (protocol milestone) to the study CT
 
 ## Question 2: ADaM ADSL
 
