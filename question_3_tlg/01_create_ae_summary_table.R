@@ -8,7 +8,7 @@
 #
 # Requirements:
 #   - Filter: treatment-emergent AEs only (TRTEMFL == "Y")
-#   - Rows: AEDECOD (or AESOC)
+#   - Rows: AESOC and AETERM (hierarchical)
 #   - Columns: treatment groups (ACTARM)
 #   - Cell values: count (n) and percentage (%)
 #   - Include total column
@@ -40,20 +40,13 @@ adae <- adae |>
     TRTEMFL == "Y"
   )
 
-# Explore data
-names(adae)
-table(adae$ACTARM)
-table(adae$TRTEMFL)
-
 # --- Create summary table -----------------------------------------------------
 # Build gtsummary table with:
-#   - Rows: AETERM (preferred term) or AESOC (system organ class)
+#   - Rows: AESOC (system organ class) and AETERM (reported term), hierarchical
 #   - Columns: ACTARM (treatment groups)
 #   - Values: n (%)
 #   - Total column
 #   - Sorted by descending frequency
-
-# Sort variables manually by subject count
 
 tbl <- adae |>
   tbl_hierarchical(

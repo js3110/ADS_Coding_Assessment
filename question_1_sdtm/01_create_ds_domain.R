@@ -24,6 +24,7 @@ library(dplyr)
 
 # Load raw data and controlled terminology
 ds_raw <- pharmaverseraw::ds_raw
+dm <- pharmaversesdtm::dm
 study_ct <- read.csv("question_1_sdtm/sdtm_ct.csv")
 
 # Map raw variables to SDTM variables using sdtm.oak

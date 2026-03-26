@@ -20,7 +20,7 @@ sink(con, type = "message", append = TRUE)
 library(pharmaversesdtm)
 library(admiral)
 library(dplyr)
-library(tidyr)
+library(stringr)
 
 # Read in input SDTM data
 dm <- pharmaversesdtm::dm
