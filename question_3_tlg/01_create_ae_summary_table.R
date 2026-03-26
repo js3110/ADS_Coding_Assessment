@@ -32,15 +32,44 @@ adae <- pharmaverseadam::adae
 adsl <- pharmaverseadam::adsl
 
 # --- Filter treatment-emergent AEs --------------------------------------------
-# TODO: Filter adae where TRTEMFL == "Y"
+# Filter adae where TRTEMFL == "Y"
+# Pre-processing --------------------------------------------
+adae <- adae |>
+  filter(
+    # treatment emergent adverse events
+    TRTEMFL == "Y"
+  )
+
+# Explore data
+names(adae)
+table(adae$ACTARM)
+table(adae$TRTEMFL)
 
 # --- Create summary table -----------------------------------------------------
-# TODO: Build gtsummary table with:
-#   - Rows: AEDECOD (preferred term) or AESOC (system organ class)
+# Build gtsummary table with:
+#   - Rows: AETERM (preferred term) or AESOC (system organ class)
 #   - Columns: ACTARM (treatment groups)
 #   - Values: n (%)
 #   - Total column
 #   - Sorted by descending frequency
+
+# Sort variables manually by subject count
+
+tbl <- adae |>
+  tbl_hierarchical(
+    variables = c(AESOC, AETERM),
+    by = ACTARM,
+    id = USUBJID,
+    denominator = adsl,
+    overall_row = TRUE,
+    label = "..ard_hierarchical_overall.." ~ "Treatment Emergent AEs"
+  ) %>%
+  add_overall() |>
+  sort_hierarchical()
+
+  
+
+tbl
 
 # --- Save output --------------------------------------------------------------
 # TODO: Save as ae_summary_table.html
