@@ -437,3 +437,4 @@ class ClinicalTrialDataAgent:
             "count": result["count"],
             "subjects": result["subjects"]
         }
+
