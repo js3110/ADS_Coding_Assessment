@@ -102,7 +102,11 @@ rt_table <- reactable(
 )
 
 # Save as self-contained HTML (no extra files/folders)
-htmltools::save_html(rt_table, "question_3_tlg/ae_summary_interactive.html")
+# saveWidget requires an absolute path to produce a truly self-contained file
+tmp_file <- tempfile(fileext = ".html")
+htmlwidgets::saveWidget(rt_table, tmp_file, selfcontained = TRUE)
+file.copy(tmp_file, "question_3_tlg/ae_summary_interactive.html", overwrite = TRUE)
+file.remove(tmp_file)
 
 # --- Log summary --------------------------------------------------------------
 cat("\n\n=== Execution Summary ===\n")
