@@ -20,32 +20,117 @@ import re
 
 
 # --- Schema Definition --------------------------------------------------------
-# Describes the dataset structure so the LLM understands what columns exist
-# and how to map natural language concepts to column names.
+# CDISC SDTM AE domain variable definitions (SDTM IG v3.4)
+# This provides the LLM with standardized clinical data terminology.
 
-DATASET_SCHEMA = """
-The dataset contains adverse event (AE) records from a clinical trial.
-Each row represents one adverse event for one subject.
+CDISC_AE_VARIABLES = {
+    "STUDYID": "Study Identifier",
+    "DOMAIN": "Domain Abbreviation (AE)",
+    "USUBJID": "Unique Subject Identifier",
+    "AESEQ": "Sequence Number — unique AE record number per subject",
+    "AESPID": "Sponsor-Defined Identifier",
+    "AETERM": "Reported Term for the Adverse Event — verbatim text as reported (e.g., HEADACHE, NAUSEA, APPLICATION SITE PRURITUS)",
+    "AELLT": "Lowest Level Term — MedDRA lowest level term",
+    "AELLTCD": "Lowest Level Term Code — MedDRA code for AELLT",
+    "AEDECOD": "Dictionary-Derived Term — MedDRA preferred term (e.g., Headache, Nausea)",
+    "AEPTCD": "Preferred Term Code — MedDRA code for AEDECOD",
+    "AEHLT": "High Level Term — MedDRA high level term",
+    "AEHLTCD": "High Level Term Code",
+    "AEHLGT": "High Level Group Term — MedDRA high level group term",
+    "AEHLGTCD": "High Level Group Term Code",
+    "AEBODSYS": "Body System or Organ Class — MedDRA system organ class (e.g., NERVOUS SYSTEM DISORDERS, CARDIAC DISORDERS)",
+    "AEBDSYCD": "Body System or Organ Class Code",
+    "AESOC": "Primary System Organ Class — primary SOC for the AE (e.g., CARDIAC DISORDERS, SKIN AND SUBCUTANEOUS TISSUE DISORDERS, GASTROINTESTINAL DISORDERS)",
+    "AESOCCD": "Primary System Organ Class Code",
+    "AESEV": "Severity/Intensity — severity of the AE. Values: MILD, MODERATE, SEVERE",
+    "AESER": "Serious Event — whether the AE is serious. Values: Y, N",
+    "AEACN": "Action Taken with Study Treatment — e.g., DOSE NOT CHANGED, DRUG WITHDRAWN, DOSE REDUCED",
+    "AEREL": "Causality — relationship of AE to study treatment. Values: PROBABLE, POSSIBLE, REMOTE, NONE",
+    "AEOUT": "Outcome of Adverse Event — e.g., RECOVERED/RESOLVED, NOT RECOVERED/NOT RESOLVED, FATAL",
+    "AESCAN": "Involves Cancer",
+    "AESCONG": "Congenital Anomaly or Birth Defect",
+    "AESDISAB": "Persist or Signif Disability/Incapacity",
+    "AESDTH": "Results in Death",
+    "AESHOSP": "Requires or Prolongs Hospitalization",
+    "AESLIFE": "Is Life Threatening",
+    "AESOD": "Occurred with Overdose",
+    "AEDTC": "Date/Time of Collection",
+    "AESTDTC": "Start Date/Time of Adverse Event",
+    "AEENDTC": "End Date/Time of Adverse Event",
+    "AESTDY": "Study Day of Start of Adverse Event",
+    "AEENDY": "Study Day of End of Adverse Event",
+}
 
-Key columns:
-- USUBJID: Unique subject identifier
-- AETERM: Reported term for the adverse event (e.g., "HEADACHE", "NAUSEA")
-- AEDECOD: Dictionary-derived term (coded preferred term)
-- AEBODSYS: Body system or organ class (e.g., "NERVOUS SYSTEM DISORDERS")
-- AESOC: Primary system organ class (e.g., "CARDIAC DISORDERS", "SKIN AND SUBCUTANEOUS TISSUE DISORDERS")
-- AESEV: Severity/intensity of the AE. Values: "MILD", "MODERATE", "SEVERE"
-- AESER: Serious adverse event flag. Values: "Y" or "N"
-- AEREL: Causality/relationship to treatment (e.g., "PROBABLE", "POSSIBLE", "NONE")
-- AEACN: Action taken with study treatment
-- AEOUT: Outcome of adverse event
+# Natural language synonyms mapped to column names
+COLUMN_SYNONYMS = {
+    "AESEV": ["severity", "intense", "intensity", "how severe", "how bad"],
+    "AESER": ["serious", "seriousness", "SAE"],
+    "AETERM": ["adverse event", "AE term", "reported term", "condition"],
+    "AEDECOD": ["preferred term", "coded term", "dictionary term", "PT"],
+    "AEBODSYS": ["body system", "organ class", "system organ class", "SOC"],
+    "AESOC": ["primary system organ class", "primary SOC"],
+    "AEREL": ["relationship", "causality", "related", "relatedness", "causal"],
+    "AEOUT": ["outcome", "resolved", "recovered", "result"],
+    "AEACN": ["action taken", "action", "dose change", "treatment action"],
+    "AESLIFE": ["life threatening", "life-threatening"],
+    "AESDTH": ["death", "died", "fatal"],
+    "AESHOSP": ["hospitalization", "hospitalisation", "hospital"],
+    "AESTDTC": ["start date", "onset date", "when did it start"],
+    "AEENDTC": ["end date", "resolution date", "when did it end"],
+}
 
-Column mapping guide:
-- "severity" or "intensity" → AESEV
-- "serious" → AESER
-- "body system" or "organ class" → AEBODSYS or AESOC
-- Specific condition names (e.g., "Headache") → AETERM
-- "relationship" or "causality" → AEREL
-"""
+
+def build_schema_from_data(df: pd.DataFrame) -> str:
+    """
+    Auto-generate a schema description from the dataset and CDISC definitions.
+
+    Combines CDISC variable definitions with actual unique values from the data
+    to give the LLM full context about what's in the dataset.
+
+    Args:
+        df: The AE DataFrame
+
+    Returns:
+        Schema string for the LLM prompt
+    """
+    lines = [
+        "The dataset contains adverse event (AE) records from a clinical trial.",
+        "Each row represents one adverse event for one subject.",
+        f"The dataset has {len(df)} records across {df['USUBJID'].nunique()} unique subjects.",
+        "",
+        "Columns and their descriptions:",
+    ]
+
+    for col in df.columns:
+        desc = CDISC_AE_VARIABLES.get(col, "No description available")
+        unique_count = df[col].nunique()
+
+        # For columns with few unique values, list them
+        if unique_count <= 10 and col not in ["USUBJID", "AESEQ", "AESPID"]:
+            unique_vals = sorted(df[col].dropna().unique().astype(str).tolist())
+            vals_str = ", ".join(unique_vals)
+            lines.append(f"- {col}: {desc}. Values: [{vals_str}]")
+        else:
+            sample = df[col].dropna().head(3).astype(str).tolist()
+            sample_str = ", ".join(sample)
+            lines.append(f"- {col}: {desc}. Examples: [{sample_str}] ({unique_count} unique values)")
+
+    lines.extend([
+        "",
+        "Column mapping guide (natural language → column):",
+        '- "severity" or "intensity" → AESEV',
+        '- "serious" or "SAE" → AESER',
+        '- "body system" or "organ class" → AEBODSYS or AESOC',
+        '- Specific condition names (e.g., "Headache") → AETERM or AEDECOD',
+        '- "relationship" or "causality" → AEREL',
+        '- "outcome" or "resolved" → AEOUT',
+        '- "action taken" or "dose" → AEACN',
+        '- "life threatening" → AESLIFE',
+        '- "hospitalization" → AESHOSP',
+        '- "death" or "fatal" → AESDTH',
+    ])
+
+    return "\n".join(lines)
 
 # --- LLM Prompt Template ------------------------------------------------------
 
@@ -93,11 +178,13 @@ class ClinicalTrialDataAgent:
         self.df = pd.read_csv(data_path)
         self.use_mock = use_mock
         self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
+        # Auto-generate schema from the loaded data and CDISC definitions
+        self.schema = build_schema_from_data(self.df)
 
     def _build_prompt(self, question: str) -> str:
-        """Build the LLM prompt from the question and schema."""
+        """Build the LLM prompt from the question and auto-generated schema."""
         return LLM_PROMPT_TEMPLATE.format(
-            schema=DATASET_SCHEMA,
+            schema=self.schema,
             question=question
         )
 
@@ -172,18 +259,49 @@ class ClinicalTrialDataAgent:
             return json.dumps({"target_column": "AESEV", "filter_value": ""})
 
         # Serious AE mapping
-        if "serious" in question:
+        if any(word in question for word in COLUMN_SYNONYMS["AESER"]):
             return json.dumps({"target_column": "AESER", "filter_value": "Y"})
 
         # Relationship / causality mapping
-        if any(word in question for word in ["relationship", "causality",
-                                              "related", "causally"]):
+        if any(word in question for word in COLUMN_SYNONYMS["AEREL"]):
             for rel in ["probable", "possible", "none", "remote"]:
                 if rel in question:
                     return json.dumps({
                         "target_column": "AEREL",
                         "filter_value": rel.upper()
                     })
+
+        # Outcome mapping
+        if any(word in question for word in COLUMN_SYNONYMS["AEOUT"]):
+            for outcome in ["recovered", "resolved", "not recovered",
+                            "not resolved", "fatal"]:
+                if outcome in question:
+                    return json.dumps({
+                        "target_column": "AEOUT",
+                        "filter_value": outcome.upper()
+                    })
+
+        # Action taken mapping
+        if any(word in question for word in COLUMN_SYNONYMS["AEACN"]):
+            for action in ["dose not changed", "drug withdrawn",
+                           "dose reduced", "not applicable"]:
+                if action in question:
+                    return json.dumps({
+                        "target_column": "AEACN",
+                        "filter_value": action.upper()
+                    })
+
+        # Life threatening mapping
+        if any(word in question for word in COLUMN_SYNONYMS["AESLIFE"]):
+            return json.dumps({"target_column": "AESLIFE", "filter_value": "Y"})
+
+        # Death mapping
+        if any(word in question for word in COLUMN_SYNONYMS["AESDTH"]):
+            return json.dumps({"target_column": "AESDTH", "filter_value": "Y"})
+
+        # Hospitalization mapping
+        if any(word in question for word in COLUMN_SYNONYMS["AESHOSP"]):
+            return json.dumps({"target_column": "AESHOSP", "filter_value": "Y"})
 
         # Body system / organ class mapping
         body_systems = {
