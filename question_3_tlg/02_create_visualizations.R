@@ -43,7 +43,6 @@ p1_bar <- ggplot(adae, aes(x = ACTARM, fill = AESEV)) +
     y = "Count of AEs",
     fill = "Severity/Intensity"
   ) +
-  theme_minimal() +
   theme(axis.text.x = element_text(angle = 0, hjust = 0.5))
 
 ggsave("question_3_tlg/plot1_ae_severity_bar.png", p1_bar, width = 8, height = 6)
